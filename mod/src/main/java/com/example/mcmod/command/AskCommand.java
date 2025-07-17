@@ -1,7 +1,9 @@
 package com.example.mcmod.command;
 
 import com.example.mcmod.HauntingManager;
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
 import net.minecraft.server.command.CommandManager;
+import com.mojang.brigadier.CommandDispatcher;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
@@ -9,8 +11,8 @@ import com.mojang.brigadier.Command;
 import com.mojang.brigadier.arguments.StringArgumentType;
 
 public class AskCommand {
-    public static void register(CommandManager.RegistrationEnvironment env) {
-        env.register(CommandManager.literal("ask")
+    public static void register(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(CommandManager.literal("ask")
             .then(CommandManager.argument("question", StringArgumentType.greedyString())
                 .executes(ctx -> {
                     ServerCommandSource source = ctx.getSource();

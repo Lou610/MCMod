@@ -18,13 +18,15 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
 import net.minecraft.util.Identifier;
 import net.minecraft.block.entity.SignBlockEntity;
-import net.minecraft.text.LiteralText;
 import net.minecraft.text.Text;
+import net.minecraft.block.entity.SignText;
+import net.minecraft.util.math.Direction;
 
 import java.util.UUID;
 import java.util.WeakHashMap;
 import java.util.Random;
 import java.util.HashMap;
+import java.util.Optional;
 
 public class HauntingManager {
     private static UUID hauntedPlayerId = null;
@@ -37,7 +39,7 @@ public class HauntingManager {
 
     public static void startHaunting(ServerPlayerEntity player) {
         hauntedPlayerId = player.getUuid();
-        hauntingStartTime.put(hauntedPlayerId, player.getServerWorld().getTime());
+        hauntingStartTime.put(hauntedPlayerId, player.getWorld().getTime());
     }
 
     public static void stopHaunting() {
@@ -57,14 +59,14 @@ public class HauntingManager {
 
     public static long getHauntingDuration(ServerPlayerEntity player) {
         if (!isHaunted(player)) return 0;
-        long start = hauntingStartTime.getOrDefault(player.getUuid(), player.getServerWorld().getTime());
-        return player.getServerWorld().getTime() - start;
+        long start = hauntingStartTime.getOrDefault(player.getUuid(), player.getWorld().getTime());
+        return player.getWorld().getTime() - start;
     }
 
     public static boolean isPlayerAtHome(ServerPlayerEntity player) {
         BlockPos bed = player.getSpawnPointPosition();
         if (bed == null) return false;
-        World world = player.getServerWorld();
+        World world = player.getWorld();
         double dist = player.getPos().distanceTo(Vec3d.ofCenter(bed));
         return dist < 8.0;
     }
@@ -82,13 +84,13 @@ public class HauntingManager {
         boolean canEnter = entityCanEnterHome.getOrDefault(player.getUuid(), false);
         // Knocking phase: after 2-3 days (24000 ticks per day)
         if (!canEnter && duration > 2 * 24000 && duration < 4 * 24000 && atHome) {
-            long now = player.getServerWorld().getTime();
+            long now = player.getWorld().getTime();
             long lastKnock = lastKnockTime.getOrDefault(player.getUuid(), 0L);
             if (now - lastKnock > 100) { // Knock every 5 seconds (100 ticks)
                 BlockPos door = findNearestDoor(player);
                 if (door != null) {
                     // Play knocking sound at the door
-                    player.getServerWorld().playSound(null, door, SoundEvent.of(new Identifier("mcmod:haunt_knock")), SoundCategory.BLOCKS, 1.0f, 1.0f);
+                    player.getWorld().playSound(null, door, SoundEvent.of(Identifier.of("mcmod", "haunt_knock")), SoundCategory.BLOCKS, 1.0f, 1.0f);
                 }
                 lastKnockTime.put(player.getUuid(), now);
             }
@@ -96,10 +98,10 @@ public class HauntingManager {
         // Detect if player opens the door during knocking phase
         if (!canEnter && atHome && player.isUsingItem()) {
             BlockPos door = findNearestDoor(player);
-            if (door != null && isDoorOpen(player.getServerWorld(), door)) {
+            if (door != null && isDoorOpen(player.getWorld(), door)) {
                 entityCanEnterHome.put(player.getUuid(), true);
                 // Play demon laugh sound for the haunted player
-                player.getServerWorld().playSound(null, player.getBlockPos(), SoundEvent.of(new Identifier("mcmod:haunt_laugh")), SoundCategory.PLAYERS, 1.0f, 1.0f);
+                player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_laugh")), SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
         }
         // Doppelganger spawn logic
@@ -112,7 +114,7 @@ public class HauntingManager {
                     HauntPackets.sendSpawnDoppelganger(player, new Vec3d(spawnPos.getX() + 0.5, spawnPos.getY(), spawnPos.getZ() + 0.5), profile.getName());
                     doppelgangers.put(player, null);
                     // Play ghostly whispers sound for the haunted player
-                    player.getServerWorld().playSound(null, player.getBlockPos(), SoundEvent.of(new Identifier("mcmod:haunt_whisper")), SoundCategory.PLAYERS, 1.0f, 1.0f);
+                    player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_whisper")), SoundCategory.PLAYERS, 1.0f, 1.0f);
                 }
             }
             // Secret basement construction and sign placement
@@ -145,7 +147,7 @@ public class HauntingManager {
             double x = playerPos.x + dx * radius;
             double z = playerPos.z + dz * radius;
             int y = player.getBlockY();
-            BlockPos pos = new BlockPos(x, y, z);
+            BlockPos pos = BlockPos.ofFloored(x, y, z);
             // Check for air block to spawn in
             if (player.getWorld().isAir(pos) && player.getWorld().isAir(pos.up())) {
                 return pos;
@@ -165,7 +167,7 @@ public class HauntingManager {
     private static BlockPos findNearestDoor(ServerPlayerEntity player) {
         BlockPos bed = player.getSpawnPointPosition();
         if (bed == null) return null;
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getWorld();
         BlockPos nearest = null;
         double minDist = Double.MAX_VALUE;
         for (BlockPos pos : BlockPos.iterateOutwards(bed, 8, 4, 8)) {
@@ -192,7 +194,7 @@ public class HauntingManager {
     private static BlockPos getHomeSpawnPos(ServerPlayerEntity player) {
         BlockPos bed = player.getSpawnPointPosition();
         if (bed == null) return null;
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getWorld();
         // Try up to 10 times to find a valid spawn position in the home (within 6 blocks of bed)
         for (int i = 0; i < 10; i++) {
             int dx = random.nextInt(13) - 6;
@@ -214,7 +216,7 @@ public class HauntingManager {
         if (basementBuilt.getOrDefault(player.getUuid(), false)) return;
         BlockPos bed = player.getSpawnPointPosition();
         if (bed == null) return;
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getWorld();
         // Dig stairs down from under the bed
         BlockPos stairStart = bed.down();
         for (int i = 0; i < 4; i++) {
@@ -251,8 +253,11 @@ public class HauntingManager {
         world.setBlockState(signPos, Blocks.OAK_SIGN.getDefaultState());
         SignBlockEntity sign = (SignBlockEntity) world.getBlockEntity(signPos);
         if (sign != null) {
-            sign.setTextOnRow(0, Text.of("Welcome home."));
-            sign.setTextOnRow(1, Text.of("You found me."));
+            // New sign API: setText(List<Text>)
+            sign.setTextOnRow(Direction.NORTH, 0, Text.literal("Welcome home."));
+            sign.setTextOnRow(Direction.NORTH, 1, Text.literal("You found me."));
+            sign.setTextOnRow(Direction.NORTH, 2, Text.empty());
+            sign.setTextOnRow(Direction.NORTH, 3, Text.empty());
         }
         basementBuilt.put(player.getUuid(), true);
     }
@@ -260,14 +265,16 @@ public class HauntingManager {
     private static void placeLureSigns(ServerPlayerEntity player) {
         BlockPos bed = player.getSpawnPointPosition();
         if (bed == null) return;
-        ServerWorld world = player.getServerWorld();
+        ServerWorld world = player.getWorld();
         // Place a sign near the bed
         BlockPos signPos = bed.add(1, 0, 0);
         world.setBlockState(signPos, Blocks.OAK_SIGN.getDefaultState());
         SignBlockEntity sign = (SignBlockEntity) world.getBlockEntity(signPos);
         if (sign != null) {
-            sign.setTextOnRow(0, Text.of("Come downstairs..."));
-            sign.setTextOnRow(1, Text.of("I have something for you..."));
+            sign.setTextOnRow(Direction.NORTH, 0, Text.literal("Come downstairs..."));
+            sign.setTextOnRow(Direction.NORTH, 1, Text.literal("I have something for you..."));
+            sign.setTextOnRow(Direction.NORTH, 2, Text.empty());
+            sign.setTextOnRow(Direction.NORTH, 3, Text.empty());
         }
     }
 
@@ -282,7 +289,7 @@ public class HauntingManager {
             playerPos.getX() >= roomOrigin.getX() && playerPos.getX() < roomOrigin.getX() + 5 &&
             playerPos.getZ() >= roomOrigin.getZ() && playerPos.getZ() < roomOrigin.getZ() + 5) {
             // Kill the player
-            player.damage(player.getDamageSources().magic(), Float.MAX_VALUE);
+            player.damage(player.getWorld().getDamageSources().magic(), Float.MAX_VALUE);
             // End haunting for this player
             UUID oldId = player.getUuid();
             stopHaunting();
@@ -290,7 +297,7 @@ public class HauntingManager {
             ServerPlayerEntity next = pickNextHauntedPlayer(player);
             if (next != null) {
                 startHaunting(next);
-                next.sendMessage(Text.of("§4You feel a presence watching you..."), false);
+                next.sendMessage(Text.literal("§4You feel a presence watching you..."), false);
             }
         }
     }

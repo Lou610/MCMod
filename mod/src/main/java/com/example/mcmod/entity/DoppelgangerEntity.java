@@ -5,7 +5,6 @@ import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.World;
@@ -25,21 +24,18 @@ public class DoppelgangerEntity extends MobEntity {
         return skinProfileName;
     }
 
-    @Override
     protected void initGoals() {
         // No AI, just stands and stares
     }
 
-    @Override
     public void writeCustomDataToNbt(NbtCompound nbt) {
-        super.writeCustomDataToNbt(nbt);
         if (skinProfileName != null) nbt.putString("SkinProfileName", skinProfileName);
     }
 
-    @Override
     public void readCustomDataFromNbt(NbtCompound nbt) {
-        super.readCustomDataFromNbt(nbt);
-        if (nbt.contains("SkinProfileName")) skinProfileName = nbt.getString("SkinProfileName");
+        if (nbt.contains("SkinProfileName")) {
+            skinProfileName = nbt.getString("SkinProfileName").orElse(null);
+        }
     }
 
     // TODO: Custom rendering to use the haunted player's skin

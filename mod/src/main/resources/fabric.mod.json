@@ -3,7 +3,7 @@
   "id": "mcmod",
   "version": "${version}",
   "name": "MC Mod",
-  "description": "A custom Minecraft mod built with Fabric",
+  "description": "A custom Minecraft mod built with Fabric for Minecraft 1.21.7.",
   "authors": [
     "Your Name"
   ],
@@ -26,10 +26,10 @@
     "mcmod.mixins.json"
   ],
   "depends": {
-    "fabricloader": ">=0.15.0",
-    "minecraft": "~1.20.4",
+    "fabricloader": ">=0.16.14",
+    "minecraft": "~1.21.7",
     "java": ">=17",
-    "fabric-api": "*"
+    "fabric-api": "0.129.0+1.21.7"
   },
   "suggests": {
     "another-mod": "*"
