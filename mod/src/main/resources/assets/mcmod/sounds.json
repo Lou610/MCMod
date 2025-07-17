@@ -1,0 +1,14 @@
+{
+  "haunt_knock": {
+    "sounds": ["mcmod:knocking-on-metal-door-aggressive-soundroll-1-00-03"]
+  },
+  "haunt_whisper": {
+    "sounds": ["mcmod:ghostly-whispers-in-your-head-smartsound-fx-1-00-04"]
+  },
+  "haunt_ritual": {
+    "sounds": ["mcmod:ticking-clock-creepy-things-jam-fx-1-00-07"]
+  },
+  "haunt_laugh": {
+    "sounds": ["mcmod:laughing-demon-epic-stock-media-1-00-04"]
+  }
+} 
