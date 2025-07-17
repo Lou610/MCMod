@@ -8,6 +8,9 @@ import net.minecraft.registry.Registries;
 import net.minecraft.registry.Registry;
 import net.minecraft.registry.RegistryKey;
 import net.minecraft.registry.RegistryKeys;
+import net.minecraft.entity.attribute.DefaultAttributeContainer;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.fabricmc.fabric.api.object.builder.v1.entity.FabricDefaultAttributeRegistry;
 
 public class ModEntities {
     public static EntityType<DoppelgangerEntity> DOPPELGANGER;
@@ -20,8 +23,10 @@ public class ModEntities {
             Registries.ENTITY_TYPE,
             Identifier.of(MCMod.MOD_ID, "doppelganger"),
             EntityType.Builder.create(DoppelgangerEntity::new, SpawnGroup.MONSTER)
-                .dimensions(0.6F, 1.8F)
-                .build(DOPPELGANGER_KEY)
+                .build("doppelganger")
         );
+        
+        // Register default attributes for the doppelganger
+        FabricDefaultAttributeRegistry.register(DOPPELGANGER, DoppelgangerEntity.createMobAttributes());
     }
 } 

@@ -1,0 +1,131 @@
+---- Minecraft Crash Report ----
+// Don't do that.
+
+Time: 2025-07-17 19:19:18
+Description: Exception in server tick loop
+
+java.lang.NullPointerException: Cannot invoke "net.minecraft.entity.attribute.DefaultAttributeContainer.getValue(net.minecraft.entity.attribute.EntityAttribute)" because "this.fallback" is null
+	at net.minecraft.entity.attribute.AttributeContainer.getValue(AttributeContainer.java:76)
+	at net.minecraft.entity.LivingEntity.getAttributeValue(LivingEntity.java:1933)
+	at net.minecraft.entity.LivingEntity.getMaxHealth(LivingEntity.java:1746)
+	at net.minecraft.entity.LivingEntity.<init>(LivingEntity.java:249)
+	at net.minecraft.entity.mob.MobEntity.<init>(MobEntity.java:138)
+	at com.example.mcmod.entity.DoppelgangerEntity.<init>(DoppelgangerEntity.java:19)
+	at com.example.mcmod.HauntingManager.tick(HauntingManager.java:197)
+	at com.example.mcmod.MCMod.lambda$onInitialize$2(MCMod.java:67)
+	at net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents.lambda$static$2(ServerTickEvents.java:43)
+	at net.minecraft.server.MinecraftServer.handler$zhd000$fabric-lifecycle-events-v1$onEndTick(MinecraftServer.java:3934)
+	at net.minecraft.server.MinecraftServer.tick(MinecraftServer.java:874)
+	at net.minecraft.server.integrated.IntegratedServer.tick(IntegratedServer.java:110)
+	at net.minecraft.server.MinecraftServer.runServer(MinecraftServer.java:683)
+	at net.minecraft.server.MinecraftServer.method_29739(MinecraftServer.java:270)
+	at java.base/java.lang.Thread.run(Thread.java:1583)
+
+
+A detailed walkthrough of the error, its code path and all known details is as follows:
+---------------------------------------------------------------------------------------
+
+-- System Details --
+Details:
+	Minecraft Version: 1.20.4
+	Minecraft Version ID: 1.20.4
+	Operating System: Windows 11 (amd64) version 10.0
+	Java Version: 21.0.7, Eclipse Adoptium
+	Java VM Version: OpenJDK 64-Bit Server VM (mixed mode, sharing), Eclipse Adoptium
+	Memory: 1322817784 bytes (1261 MiB) / 2189426688 bytes (2088 MiB) up to 17154703360 bytes (16360 MiB)
+	CPUs: 16
+	Processor Vendor: AuthenticAMD
+	Processor Name: AMD Ryzen 7 5800X 8-Core Processor             
+	Identifier: AuthenticAMD Family 25 Model 33 Stepping 2
+	Microarchitecture: Zen 3
+	Frequency (GHz): 3.80
+	Number of physical packages: 1
+	Number of physical CPUs: 8
+	Number of logical CPUs: 16
+	Graphics card #0 name: AMD Radeon RX 6950 XT
+	Graphics card #0 vendor: Advanced Micro Devices, Inc. (0x1002)
+	Graphics card #0 VRAM (MB): 4095.00
+	Graphics card #0 deviceId: 0x73a5
+	Graphics card #0 versionInfo: DriverVersion=32.0.21013.1000
+	Memory slot #0 capacity (MB): 16384.00
+	Memory slot #0 clockSpeed (GHz): 3.60
+	Memory slot #0 type: DDR4
+	Memory slot #1 capacity (MB): 16384.00
+	Memory slot #1 clockSpeed (GHz): 3.60
+	Memory slot #1 type: DDR4
+	Memory slot #2 capacity (MB): 16384.00
+	Memory slot #2 clockSpeed (GHz): 3.60
+	Memory slot #2 type: DDR4
+	Memory slot #3 capacity (MB): 16384.00
+	Memory slot #3 clockSpeed (GHz): 3.60
+	Memory slot #3 type: DDR4
+	Virtual memory max (MB): 69523.39
+	Virtual memory used (MB): 33694.30
+	Swap memory total (MB): 4096.00
+	Swap memory used (MB): 0.00
+	JVM Flags: 0 total; 
+	Fabric Mods: 
+		fabric-api: Fabric API 0.91.3+1.20.4
+		fabric-api-base: Fabric API Base 0.4.35+78d798af4f
+		fabric-api-lookup-api-v1: Fabric API Lookup API (v1) 1.6.45+78d798af4f
+		fabric-biome-api-v1: Fabric Biome API (v1) 13.0.15+78d798af4f
+		fabric-block-api-v1: Fabric Block API (v1) 1.0.14+78d798af4f
+		fabric-block-view-api-v2: Fabric BlockView API (v2) 1.0.3+78d798af4f
+		fabric-blockrenderlayer-v1: Fabric BlockRenderLayer Registration (v1) 1.1.45+78d798af4f
+		fabric-client-tags-api-v1: Fabric Client Tags 1.1.6+78d798af4f
+		fabric-command-api-v1: Fabric Command API (v1) 1.2.40+f71b366f4f
+		fabric-command-api-v2: Fabric Command API (v2) 2.2.19+78d798af4f
+		fabric-commands-v0: Fabric Commands (v0) 0.2.57+df3654b34f
+		fabric-containers-v0: Fabric Containers (v0) 0.1.81+df3654b34f
+		fabric-content-registries-v0: Fabric Content Registries (v0) 5.0.9+78d798af4f
+		fabric-convention-tags-v1: Fabric Convention Tags 1.5.9+78d798af4f
+		fabric-crash-report-info-v1: Fabric Crash Report Info (v1) 0.2.22+78d798af4f
+		fabric-data-generation-api-v1: Fabric Data Generation API (v1) 13.1.17+78d798af4f
+		fabric-dimensions-v1: Fabric Dimensions API (v1) 2.1.60+78d798af4f
+		fabric-entity-events-v1: Fabric Entity Events (v1) 1.5.28+4ced05924f
+		fabric-events-interaction-v0: Fabric Events Interaction (v0) 0.6.14+78d798af4f
+		fabric-events-lifecycle-v0: Fabric Events Lifecycle (v0) 0.2.71+df3654b34f
+		fabric-game-rule-api-v1: Fabric Game Rule API (v1) 1.0.45+78d798af4f
+		fabric-gametest-api-v1: Fabric Game Test API (v1) 1.2.19+78d798af4f
+		fabric-item-api-v1: Fabric Item API (v1) 2.1.34+78d798af4f
+		fabric-item-group-api-v1: Fabric Item Group API (v1) 4.0.20+78d798af4f
+		fabric-key-binding-api-v1: Fabric Key Binding API (v1) 1.0.40+78d798af4f
+		fabric-keybindings-v0: Fabric Key Bindings (v0) 0.2.38+df3654b34f
+		fabric-lifecycle-events-v1: Fabric Lifecycle Events (v1) 2.2.29+78d798af4f
+		fabric-loot-api-v2: Fabric Loot API (v2) 2.1.4+78d798af4f
+		fabric-message-api-v1: Fabric Message API (v1) 6.0.4+78d798af4f
+		fabric-mining-level-api-v1: Fabric Mining Level API (v1) 2.1.59+78d798af4f
+		fabric-model-loading-api-v1: Fabric Model Loading API (v1) 1.0.7+78d798af4f
+		fabric-models-v0: Fabric Models (v0) 0.4.6+9386d8a74f
+		fabric-networking-api-v1: Fabric Networking API (v1) 3.1.2+78d798af4f
+		fabric-object-builder-api-v1: Fabric Object Builder API (v1) 13.0.7+78d798af4f
+		fabric-particles-v1: Fabric Particles (v1) 1.1.6+78d798af4f
+		fabric-recipe-api-v1: Fabric Recipe API (v1) 2.0.15+78d798af4f
+		fabric-registry-sync-v0: Fabric Registry Sync (v0) 4.0.13+78d798af4f
+		fabric-renderer-api-v1: Fabric Renderer API (v1) 3.2.3+78d798af4f
+		fabric-renderer-indigo: Fabric Renderer - Indigo 1.5.3+78d798af4f
+		fabric-renderer-registries-v1: Fabric Renderer Registries (v1) 3.2.50+df3654b34f
+		fabric-rendering-data-attachment-v1: Fabric Rendering Data Attachment (v1) 0.3.41+73761d2e4f
+		fabric-rendering-fluids-v1: Fabric Rendering Fluids (v1) 3.0.32+78d798af4f
+		fabric-rendering-v0: Fabric Rendering (v0) 1.1.53+df3654b34f
+		fabric-rendering-v1: Fabric Rendering (v1) 3.0.12+78d798af4f
+		fabric-resource-conditions-api-v1: Fabric Resource Conditions API (v1) 2.3.13+78d798af4f
+		fabric-resource-loader-v0: Fabric Resource Loader (v0) 0.11.15+78d798af4f
+		fabric-screen-api-v1: Fabric Screen API (v1) 2.0.16+78d798af4f
+		fabric-screen-handler-api-v1: Fabric Screen Handler API (v1) 1.3.50+78d798af4f
+		fabric-sound-api-v1: Fabric Sound API (v1) 1.0.16+78d798af4f
+		fabric-transfer-api-v1: Fabric Transfer API (v1) 4.0.6+78d798af4f
+		fabric-transitive-access-wideners-v1: Fabric Transitive Access Wideners (v1) 5.0.13+78d798af4f
+		fabricloader: Fabric Loader 0.15.7
+		java: OpenJDK 64-Bit Server VM 21
+		mcmod: MC Mod 1.0.0
+		minecraft: Minecraft 1.20.4
+		mixinextras: MixinExtras 0.3.5
+	Server Running: true
+	Player Count: 1 / 8; [ServerPlayerEntity['Player985'/199, l='ServerLevel[Creeper]', x=-5.78, y=65.00, z=-0.34]]
+	Data Packs: vanilla, fabric
+	Enabled Feature Flags: minecraft:vanilla
+	World Generation: Stable
+	Type: Integrated Server (map_client.txt)
+	Is Modded: Definitely; Client brand changed to 'fabric'; Server brand changed to 'fabric'
+	Launched Version: Fabric

@@ -18,6 +18,7 @@ import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvent;
+import net.minecraft.inventory.Inventory;
 
 import java.util.List;
 
@@ -30,24 +31,23 @@ public class RitualHandler {
             Block block = world.getBlockState(pos).getBlock();
             Direction facing = player.getHorizontalFacing();
 
-            // Check if player is placing a candle on a netherite block
-            if (block == Blocks.NETHERITE_BLOCK && isCandle(player.getMainHandStack().getItem())) {
-                // Chest must be to the right of the netherite block (relative to player facing)
+            // Check if player is placing a candle on a netherrack block
+            if (block == Blocks.NETHERRACK && isCandle(player.getMainHandStack().getItem())) {
+                // Chest must be to the right of the netherrack block (relative to player facing)
                 Direction right = facing.rotateYClockwise();
                 BlockPos chestPos = pos.offset(right);
                 Block chestBlock = world.getBlockState(chestPos).getBlock();
                 if (chestBlock != Blocks.CHEST) return ActionResult.PASS;
 
-                // Check for redstone torches around both blocks (all 8 positions)
-                if (!hasTorchesAround(world, pos, chestPos)) return ActionResult.PASS;
-
                 // Check chest for paper with a player's name
                 BlockEntity be = world.getBlockEntity(chestPos);
                 if (!(be instanceof ChestBlockEntity chest)) return ActionResult.PASS;
-                List<ItemStack> inv = chest.getInventory();
+                
+                // Use the inventory interface
+                Inventory inv = chest;
                 for (int i = 0; i < inv.size(); i++) {
-                    ItemStack stack = inv.get(i);
-                    if (stack.getItem() == Items.PAPER && stack.hasCustomName()) {
+                    ItemStack stack = inv.getStack(i);
+                    if (stack.getItem() == Items.PAPER && !stack.getName().equals(stack.getItem().getName(stack))) {
                         String targetName = stack.getName().getString();
                         // Try to find the player by name
                         MinecraftServer server = player.getServer();
@@ -62,7 +62,7 @@ public class RitualHandler {
                                 HauntingManager.startHaunting(target);
                                 // Play ticking clock sound for all players
                                 for (ServerPlayerEntity p : player.getServer().getPlayerManager().getPlayerList()) {
-                                    p.getServerWorld().playSound(null, p.getBlockPos(), SoundEvent.of(new Identifier("mcmod:haunt_ritual")), SoundCategory.AMBIENT, 1.0f, 1.0f);
+                                    p.getWorld().playSound(null, p.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_ritual")), SoundCategory.AMBIENT, 1.0f, 1.0f);
                                 }
                                 return ActionResult.SUCCESS;
                             }
@@ -93,19 +93,5 @@ public class RitualHandler {
             || item == net.minecraft.item.Items.GREEN_CANDLE
             || item == net.minecraft.item.Items.RED_CANDLE
             || item == net.minecraft.item.Items.BLACK_CANDLE;
-    }
-
-    private static boolean hasTorchesAround(World world, BlockPos pos1, BlockPos pos2) {
-        // Get all 8 positions around the two blocks
-        BlockPos[] positions = new BlockPos[] {
-            pos1.north(), pos1.south(), pos1.east(), pos1.west(),
-            pos2.north(), pos2.south(), pos2.east(), pos2.west()
-        };
-        for (BlockPos p : positions) {
-            if (world.getBlockState(p).getBlock() != Blocks.REDSTONE_TORCH) {
-                return false;
-            }
-        }
-        return true;
     }
 } 

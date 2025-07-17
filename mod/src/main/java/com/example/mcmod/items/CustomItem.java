@@ -7,7 +7,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
+import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
 
 public class CustomItem extends Item {
@@ -16,7 +18,7 @@ public class CustomItem extends Item {
     }
 
     @Override
-    public ActionResult use(World world, PlayerEntity user, Hand hand) {
+    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
         ItemStack itemStack = user.getStackInHand(hand);
         
         if (!world.isClient) {
@@ -26,17 +28,17 @@ public class CustomItem extends Item {
             
             // Make sure the target position is safe (not inside blocks)
             while (world.getBlockState(targetPos).isSolidBlock(world, targetPos) && 
-                   targetPos.getY() < world.getTopY(net.minecraft.world.Heightmap.Type.WORLD_SURFACE, targetPos)) {
+                   targetPos.getY() < world.getTopY(net.minecraft.world.Heightmap.Type.WORLD_SURFACE, targetPos.getX(), targetPos.getZ())) {
                 targetPos = targetPos.up();
             }
             
             if (user instanceof ServerPlayerEntity serverPlayer) {
-                serverPlayer.teleport(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, false);
+                serverPlayer.teleport(targetPos.getX() + 0.5, targetPos.getY(), targetPos.getZ() + 0.5, true);
                 user.sendMessage(Text.literal("§bYou have been teleported!"), false);
             }
         }
         
         user.setStackInHand(hand, itemStack);
-        return ActionResult.SUCCESS;
+        return TypedActionResult.success(itemStack, world.isClient);
     }
 } 

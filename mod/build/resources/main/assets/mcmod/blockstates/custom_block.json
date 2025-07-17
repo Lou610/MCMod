@@ -1,0 +1,7 @@
+{
+  "variants": {
+    "": {
+      "model": "mcmod:block/custom_block"
+    }
+  }
+} 

@@ -40,7 +40,7 @@ public class MCMod implements ModInitializer {
 
         // Register /ask command
         net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
-            AskCommand.register(environment);
+            AskCommand.register(dispatcher);
         });
 
         // Register custom entities
