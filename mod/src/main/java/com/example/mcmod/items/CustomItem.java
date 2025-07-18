@@ -3,11 +3,11 @@ package com.example.mcmod.items;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.ItemUsageContext;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
-import net.minecraft.util.TypedActionResult;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.Heightmap;
 import net.minecraft.world.World;
@@ -18,10 +18,11 @@ public class CustomItem extends Item {
     }
 
     @Override
-    public TypedActionResult<ItemStack> use(World world, PlayerEntity user, Hand hand) {
-        ItemStack itemStack = user.getStackInHand(hand);
+    public ActionResult useOnBlock(ItemUsageContext context) {
+        World world = context.getWorld();
+        PlayerEntity user = context.getPlayer();
         
-        if (!world.isClient) {
+        if (!world.isClient && user != null) {
             // Teleport the player 10 blocks in the direction they're looking
             BlockPos pos = user.getBlockPos();
             BlockPos targetPos = pos.add(user.getHorizontalFacing().getVector().multiply(10));
@@ -38,7 +39,6 @@ public class CustomItem extends Item {
             }
         }
         
-        user.setStackInHand(hand, itemStack);
-        return TypedActionResult.success(itemStack, world.isClient);
+        return ActionResult.SUCCESS;
     }
 } 

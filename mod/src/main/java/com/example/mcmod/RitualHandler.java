@@ -60,10 +60,8 @@ public class RitualHandler {
                                 player.sendMessage(Text.literal("§4The ritual is complete. The haunting begins..."), false);
                                 target.sendMessage(Text.literal("§8You feel a chill run down your spine..."), false);
                                 HauntingManager.startHaunting(target);
-                                // Play ticking clock sound for all players
-                                for (ServerPlayerEntity p : player.getServer().getPlayerManager().getPlayerList()) {
-                                    p.getWorld().playSound(null, p.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_ritual")), SoundCategory.AMBIENT, 1.0f, 1.0f);
-                                }
+                                // Play demon laugh sound only for the haunted player
+                                target.getWorld().playSound(null, target.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_laugh")), SoundCategory.PLAYERS, 1.0f, 1.0f);
                                 return ActionResult.SUCCESS;
                             }
                         }

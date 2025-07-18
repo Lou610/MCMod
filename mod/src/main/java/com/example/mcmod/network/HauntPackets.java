@@ -4,13 +4,11 @@ import com.example.mcmod.entity.ModEntities;
 import com.example.mcmod.entity.DoppelgangerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.math.Vec3d;
-import net.minecraft.entity.SpawnReason;
 import net.minecraft.entity.Entity;
 import com.example.mcmod.MCMod;
 import net.minecraft.server.world.ServerWorld;
 
 public class HauntPackets {
-    // TODO: Implement proper networking when we have the correct API
     public static void sendSpawnDoppelganger(ServerPlayerEntity player, Vec3d pos, String skinName) {
         ServerWorld world = (ServerWorld) player.getWorld();
         if (world != null) {
@@ -42,6 +40,5 @@ public class HauntPackets {
     }
 
     public static void registerClientHandlers() {
-        // TODO: Implement client-side networking when we have the correct API
     }
 } 

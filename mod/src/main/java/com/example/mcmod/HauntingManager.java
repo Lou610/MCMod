@@ -156,13 +156,70 @@ public class HauntingManager {
         boolean atHome = isPlayerAtHome(player);
         boolean canEnter = entityCanEnterHome.getOrDefault(player.getUuid(), false);
         
-        // For testing: immediately allow doppelganger to enter after ritual
-        if (!canEnter && duration > 100) { // After 5 seconds instead of 2-4 days
-            entityCanEnterHome.put(player.getUuid(), true);
-            player.sendMessage(Text.literal("§8The entity can now enter your home..."), false);
+        // Early sightings phase: Days 1-2 - occasional doppelganger sightings to create "being watched" feeling
+        if (!canEnter && duration > 1200 && duration < 2 * 24000) { // After 1 minute for testing (was 24000)
+            long now = player.getWorld().getTime();
+            long lastSighting = lastKnockTime.getOrDefault(player.getUuid(), 0L); // Reusing this for sighting cooldown
+            
+            // Debug: Check if we're in the right phase
+            if (duration % 1200 == 0) { // Every minute
+                player.sendMessage(Text.literal("§7Debug: Haunting duration: " + duration + " ticks, canEnter: " + canEnter), false);
+            }
+            
+            // Debug: Check if we should spawn
+            if (now - lastSighting > 200 + random.nextInt(400)) { // 10-30 seconds for testing
+                player.sendMessage(Text.literal("§7Debug: Attempting to spawn doppelganger..."), false);
+            }
+            
+            // Random sightings every 10-30 seconds for testing
+            if (now - lastSighting > 200 + random.nextInt(400)) { // 10-30 seconds for testing
+                BlockPos spawnPos = getPeripheralSpawnPos(player);
+                if (spawnPos != null) {
+                    player.sendMessage(Text.literal("§7Debug: Found spawn position at " + spawnPos), false);
+                    try {
+                        // Create a temporary doppelganger for early sightings
+                        DoppelgangerEntity doppelganger = new DoppelgangerEntity(ModEntities.DOPPELGANGER, player.getWorld());
+                        doppelganger.setPosition(Vec3d.ofCenter(spawnPos));
+                        doppelganger.setCustomName(Text.literal("§8" + player.getName().getString()));
+                        doppelganger.setCustomNameVisible(true);
+                        doppelganger.setTargetPlayer(player);
+                        doppelganger.setSkinProfileName(player.getName().getString());
+                        player.getWorld().spawnEntity(doppelganger);
+                        
+                        // Play ghostly whispers sound and send whisper message
+                        player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_whisper")), SoundCategory.PLAYERS, 0.7f, 1.0f);
+                        player.sendMessage(Text.literal("§8You hear a whisper in the distance..."), false);
+                        
+                        // Store the doppelganger for removal later
+                        final DoppelgangerEntity finalDoppelganger = doppelganger;
+                        final int removeDelay = 60 + random.nextInt(40); // 3-5 seconds
+                        
+                        // Schedule removal
+                        new java.util.Timer().schedule(new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                player.getWorld().getServer().execute(() -> {
+                                    if (finalDoppelganger.isAlive()) {
+                                        finalDoppelganger.remove(net.minecraft.entity.Entity.RemovalReason.DISCARDED);
+                                    }
+                                });
+                            }
+                        }, removeDelay * 50); // Convert ticks to milliseconds
+                        
+                        lastKnockTime.put(player.getUuid(), now);
+                        MCMod.LOGGER.info("Early doppelganger sighting for player {} at position {}", player.getName().getString(), spawnPos);
+                        player.sendMessage(Text.literal("§7Debug: Doppelganger spawned successfully!"), false);
+                    } catch (Exception e) {
+                        MCMod.LOGGER.warn("Could not spawn early doppelganger sighting: " + e.getMessage());
+                        player.sendMessage(Text.literal("§7Debug: Failed to spawn doppelganger: " + e.getMessage()), false);
+                    }
+                } else {
+                    player.sendMessage(Text.literal("§7Debug: Could not find spawn position"), false);
+                }
+            }
         }
         
-        // Knocking phase: after 2-3 days (24000 ticks per day) - DISABLED FOR TESTING
+        // Knocking phase: after 2-3 days (24000 ticks per day)
         if (!canEnter && duration > 2 * 24000 && duration < 4 * 24000 && atHome) {
             long now = player.getWorld().getTime();
             long lastKnock = lastKnockTime.getOrDefault(player.getUuid(), 0L);
@@ -176,11 +233,12 @@ public class HauntingManager {
             }
         }
         
-        // Detect if player opens the door during knocking phase - DISABLED FOR TESTING
+        // Detect if player opens the door during knocking phase
         if (!canEnter && atHome && player.isUsingItem()) {
             BlockPos door = findNearestDoor(player);
             if (door != null && isDoorOpen((ServerWorld) player.getWorld(), door)) {
                 entityCanEnterHome.put(player.getUuid(), true);
+                player.sendMessage(Text.literal("§8The entity can now enter your home..."), false);
                 // Play demon laugh sound for the haunted player
                 player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_laugh")), SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
@@ -191,11 +249,16 @@ public class HauntingManager {
             DoppelgangerEntity doppelganger = doppelgangers.get(player);
             
             // Check if we need to respawn the doppelganger after cooldown
-            if (doppelganger == null) {
+            if (doppelganger == null || !doppelganger.isAlive()) {
+                // Debug: Print current state
+                player.sendMessage(Text.literal("§7Debug: Starting doppelganger spawn process"), false);
+                MCMod.LOGGER.info("Debug: Starting doppelganger spawn process for player {}", player.getName().getString());
+                
                 // Check if there's a cooldown timer for this player
                 Long nextAppearTime = nextDoppelgangerAppearTime.get(player.getUuid());
+                long currentTime = player.getWorld().getTime();
+                
                 if (nextAppearTime != null && nextAppearTime > 0) {
-                    long currentTime = player.getWorld().getTime();
                     if (currentTime >= nextAppearTime) {
                         // Time to respawn!
                         nextDoppelgangerAppearTime.remove(player.getUuid());
@@ -204,27 +267,63 @@ public class HauntingManager {
                         // Still in cooldown, don't spawn yet
                         return;
                     }
+                } else {
+                    // No cooldown set, set one to prevent spam
+                    nextDoppelgangerAppearTime.put(player.getUuid(), currentTime + 600); // 30 second cooldown
+                    return;
                 }
                 
+                // Debug: About to get spawn position
+                player.sendMessage(Text.literal("§7Debug: Getting spawn position..."), false);
+                
                 // Spawn doppelganger if it doesn't exist
-                if (doppelganger == null) {
-                    BlockPos spawnPos = getPeripheralSpawnPos(player);
-                    if (spawnPos != null) {
-                        GameProfile profile = player.getGameProfile();
+                BlockPos spawnPos = getPeripheralSpawnPos(player);
+                if (spawnPos != null) {
+                    player.sendMessage(Text.literal("§7Debug: Found spawn position: " + spawnPos), false);
+                    try {
+                        // Debug: Print entity type and world
+                        player.sendMessage(Text.literal("§7Debug: ModEntities.DOPPELGANGER=" + ModEntities.DOPPELGANGER), false);
+                        player.sendMessage(Text.literal("§7Debug: player.getWorld()=" + player.getWorld()), false);
+                        MCMod.LOGGER.info("Debug: ModEntities.DOPPELGANGER={}", ModEntities.DOPPELGANGER);
+                        MCMod.LOGGER.info("Debug: player.getWorld()={}", player.getWorld());
+                        // Debug: Check if ModEntities.DOPPELGANGER is null
+                        if (ModEntities.DOPPELGANGER == null) {
+                            MCMod.LOGGER.error("ModEntities.DOPPELGANGER is null! Entity not registered properly.");
+                            player.sendMessage(Text.literal("§cDebug: Doppelganger entity not registered"), false);
+                            return;
+                        }
+                        
+                        // Create a doppelganger entity
                         doppelganger = new DoppelgangerEntity(ModEntities.DOPPELGANGER, player.getWorld());
                         doppelganger.setPosition(Vec3d.ofCenter(spawnPos));
-                        doppelganger.setSkinProfileName(profile.getName());
+                        doppelganger.setCustomName(Text.literal("§8" + player.getName().getString()));
+                        doppelganger.setCustomNameVisible(true);
                         doppelganger.setTargetPlayer(player);
+                        doppelganger.setSkinProfileName(player.getName().getString());
                         player.getWorld().spawnEntity(doppelganger);
+                        
+                        // Store the doppelganger
                         doppelgangers.put(player, doppelganger);
+                        
                         // Play ghostly whispers sound for the haunted player
                         player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_whisper")), SoundCategory.PLAYERS, 1.0f, 1.0f);
                         player.sendMessage(Text.literal("§8A doppelganger has appeared in your peripheral vision..."), false);
                         MCMod.LOGGER.info("Doppelganger spawned for player {} at position {}", player.getName().getString(), spawnPos);
-                    } else {
-                        player.sendMessage(Text.literal("§8Failed to find spawn position for doppelganger"), false);
-                        MCMod.LOGGER.warn("Could not find peripheral spawn position for player {}", player.getName().getString());
+                    } catch (Exception e) {
+                        MCMod.LOGGER.error("Could not spawn doppelganger", e);
+                        java.io.StringWriter sw = new java.io.StringWriter();
+                        e.printStackTrace(new java.io.PrintWriter(sw));
+                        String stackTrace = sw.toString();
+                        player.sendMessage(Text.literal("§cDebug: Failed to spawn doppelganger: " + e), false);
+                        player.sendMessage(Text.literal(stackTrace.substring(0, Math.min(stackTrace.length(), 500))), false); // Only show first 500 chars
+                        // Set a shorter cooldown on failure
+                        nextDoppelgangerAppearTime.put(player.getUuid(), currentTime + 300); // 15 second cooldown
                     }
+                } else {
+                    // Set a shorter cooldown if no spawn position found
+                    nextDoppelgangerAppearTime.put(player.getUuid(), currentTime + 300); // 15 second cooldown
+                    MCMod.LOGGER.warn("Could not find peripheral spawn position for player {}", player.getName().getString());
+                    player.sendMessage(Text.literal("§cDebug: Could not find spawn position"), false);
                 }
             } else {
                 // Handle doppelganger movement and damage logic
@@ -236,11 +335,6 @@ public class HauntingManager {
                 buildSecretBasement(player);
                 placeLureSigns(player);
                 checkBasementFinale(player);
-            }
-        } else {
-            // Debug message for testing
-            if (duration % 200 == 0) { // Every 10 seconds
-                player.sendMessage(Text.literal("§7Debug: Haunting duration: " + duration + " ticks, Can enter: " + canEnter), false);
             }
         }
     }
@@ -275,7 +369,7 @@ public class HauntingManager {
         return null;
     }
 
-    private static boolean isLookingAt(ServerPlayerEntity player, DoppelgangerEntity entity, double thresholdDegrees) {
+    private static boolean isLookingAt(ServerPlayerEntity player, net.minecraft.entity.Entity entity, double thresholdDegrees) {
         Vec3d playerLook = player.getRotationVec(1.0f);
         Vec3d toEntity = entity.getPos().subtract(player.getPos()).normalize();
         double dot = playerLook.dotProduct(toEntity);
@@ -422,9 +516,13 @@ public class HauntingManager {
         if (playerPos.getY() >= roomOrigin.getY() && playerPos.getY() < roomOrigin.getY() + 3 &&
             playerPos.getX() >= roomOrigin.getX() && playerPos.getX() < roomOrigin.getX() + 5 &&
             playerPos.getZ() >= roomOrigin.getZ() && playerPos.getZ() < roomOrigin.getZ() + 5) {
-            // Kill the player - use a simpler approach for 1.20.4
+            // Kill the player - use a simpler approach for 1.21.7
             try {
-                player.damage(player.getWorld().getDamageSources().generic(), Float.MAX_VALUE);
+                // Try to use reflection to find the correct damage method
+                java.lang.reflect.Method damageMethod = ServerPlayerEntity.class.getDeclaredMethod("damage", ServerWorld.class, DamageSource.class, float.class);
+                damageMethod.setAccessible(true);
+                damageMethod.invoke(player, (ServerWorld) player.getWorld(), player.getWorld().getDamageSources().generic(), Float.MAX_VALUE);
+                MCMod.LOGGER.info("Player killed in basement finale");
             } catch (Exception e) {
                 MCMod.LOGGER.warn("Could not damage player: " + e.getMessage());
             }
@@ -454,6 +552,9 @@ public class HauntingManager {
     private static void handleDoppelgangerBehavior(ServerPlayerEntity player, DoppelgangerEntity doppelganger) {
         if (!doppelganger.isAlive()) {
             doppelgangers.remove(player);
+            // Set a cooldown before the next spawn
+            long currentTime = player.getWorld().getTime();
+            nextDoppelgangerAppearTime.put(player.getUuid(), currentTime + 1200); // 60 second cooldown
             return;
         }
         
@@ -462,47 +563,32 @@ public class HauntingManager {
         double distance = playerPos.distanceTo(doppelPos);
         
         // Check if player is looking at the doppelganger
-        boolean isLookingAt = isLookingAt(player, doppelganger, 30.0); // 30 degree cone
+        boolean isLookingAt = isLookingAt(player, doppelganger, 25.0); // 25 degree cone
         
-        // If player is looking directly at doppelganger, make it disappear for 60-512 seconds
-        if (isLookingAt && distance < 15.0) {
-            // Set the next appear time (60-512 seconds = 1200-10240 ticks)
-            long disappearTime = 1200 + random.nextInt(10240 - 1200 + 1); // 60-512 seconds
-            long nextAppearTime = player.getWorld().getTime() + disappearTime;
-            nextDoppelgangerAppearTime.put(player.getUuid(), nextAppearTime);
-            
-            // Remove the doppelganger from the map and kill it
-            doppelgangers.remove(player);
-            doppelganger.remove(net.minecraft.entity.Entity.RemovalReason.DISCARDED);
-            
-            // Play disappearing sound
-            player.getWorld().playSound(null, BlockPos.ofFloored(doppelPos), SoundEvent.of(Identifier.of("mcmod", "haunt_disappear")), SoundCategory.PLAYERS, 0.5f, 1.0f);
-            
-            // Send message to player
-            player.sendMessage(Text.literal("§8The doppelganger has vanished..."), false);
-            
-            MCMod.LOGGER.info("Doppelganger disappeared for player {} for {} ticks ({} seconds)", 
-                player.getName().getString(), disappearTime, disappearTime / 20);
-        }
+        // If player is looking directly at doppelganger and close, the doppelganger will teleport away
+        // (This is now handled in the DoppelgangerEntity.tick() method)
         
         // If player looks away and doppelganger is close, damage them
         if (!isLookingAt && distance < 3.0) {
             long now = player.getWorld().getTime();
             long lastDamage = lastDamageTime.getOrDefault(player.getUuid(), 0L);
             if (now - lastDamage > 60) { // Damage every 3 seconds
-                player.damage(player.getWorld().getDamageSources().generic(), 2.0f);
+                // Try to use reflection to find the correct damage method
+                try {
+                    java.lang.reflect.Method damageMethod = ServerPlayerEntity.class.getDeclaredMethod("damage", ServerWorld.class, DamageSource.class, float.class);
+                    damageMethod.setAccessible(true);
+                    damageMethod.invoke(player, (ServerWorld) player.getWorld(), player.getWorld().getDamageSources().generic(), 2.0f);
+                    MCMod.LOGGER.info("Player damaged by doppelganger");
+                } catch (Exception e) {
+                    MCMod.LOGGER.warn("Could not damage player: " + e.getMessage());
+                }
                 lastDamageTime.put(player.getUuid(), now);
                 // Play damage sound
                 player.getWorld().playSound(null, player.getBlockPos(), SoundEvent.of(Identifier.of("mcmod", "haunt_damage")), SoundCategory.PLAYERS, 1.0f, 1.0f);
             }
         }
         
-        // Occasionally move to a new peripheral position
-        if (random.nextInt(200) == 0) { // 1 in 200 chance per tick
-            BlockPos newPos = getPeripheralSpawnPos(player);
-            if (newPos != null) {
-                doppelganger.teleport(newPos.getX() + 0.5, newPos.getY(), newPos.getZ() + 0.5);
-            }
-        }
+        // The doppelganger now handles its own teleportation in its tick() method
+        // No need for additional teleport logic here
     }
 } 
